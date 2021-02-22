@@ -31,3 +31,24 @@
 - The quants analyst address can change the optimised parameter (lambda) within a certain range when the market condition changes.
 1. When labmda is updated, the latest price is recalculated with the new labmda.
 2. Recalculation starts from the registered volatility at `latestTimestamp - _dataNum * _interval`.
+
+## About Corrections from the first audit report
+The corrected points are marked with ```AUDIT-FIX``` comment.
+### Unchanged Points
+- RIO-01: In our local environment, import path starting with `@openzeppelin` does not work.
+- RIO-15: User cannot specify chainlink roundId which is to be registered in this contract. (See )
+- RIO-16: Variable `_interval` is about 1~7 days in seconds. So, overflow of `_latestTimestamp` will not occur
+- RIO-17: Same reason as RIO-15
+- RIO-22: `interval` is non-0 value.
+- RIO-20: Variables have been already checked before this line.
+- RIO-23: Same reason as RIO-16
+- RIO-24: Same reason as RIO-16
+- RIO-25: Same reason as RIO-16
+- RIO-28: Price is checked in  `_getPriceFromChainlinkWithAggregator()`, so overflow will not occur.
+- RIO-30: `hintID` at this point is guaranteed to be more than 0
+- RIO-31: Variable `index` is incremented by 1 for each registration, so overflow will not occur.
+- RIO-32: Same reason as RIO-16
+- RIO-33: Rational price will be returned before `roundID` becomes 0 since rational prices are recorded on chainlink with positive roundIDs
+- RIO-35: Same reason as RIO-16
+
+
