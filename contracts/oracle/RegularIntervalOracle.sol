@@ -86,7 +86,7 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
     _latestTimestamp = uint128(startTimestamp);
     _oldestTimestamp = uint128(startTimestamp);
     // AUDIT-FIX: RIO-11
-    require(initialDataNum > 1, "Error: Decimals should be more than 0");
+    require(initialDataNum > 1, "Error: InitialDataNum should be more than 1");
     // AUDIT-FIX: RIO-12
     require(quantsAddress != address(0), "Error: Invalid initial quant address");
     // AUDIT-FIX: RIO-13
