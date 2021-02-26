@@ -219,7 +219,7 @@ contract("RegularIntervalOracle", function (accounts) {
         );
         assert.equal(
           vol.toString(),
-          "87729397",
+          "90682056",
           "Invalid volatility returned: " + vol.toString()
         );
       });
@@ -245,7 +245,7 @@ contract("RegularIntervalOracle", function (accounts) {
           );
           assert.equal(
             vol.toString(),
-            "85510531",
+            "89261863",
             "Invalid volatility returned: " + vol.toString()
           );
         });
@@ -255,6 +255,7 @@ contract("RegularIntervalOracle", function (accounts) {
 
   describe("setSequential prices", function () {
     beforeEach(async function () {
+      await time.increase(interval * 2);
       await oracleInstance.setSequentialPrices([0, 0]);
     });
     it("check price", async function () {
@@ -306,9 +307,14 @@ contract("RegularIntervalOracle", function (accounts) {
           startTime + interval * 15
         );
 
+        const vol2 = await oracleInstance.getVolatilityTimeOf(
+          startTime + interval * 14
+        );
+        console.log(vol2.toString());
+        console.log(vol.toString());
         assert.equal(
           vol.toString(),
-          "55416105",
+          "74483675",
           "Invalid volatility returned: " + vol.toString()
         );
       });
