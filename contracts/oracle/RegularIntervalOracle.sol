@@ -3,7 +3,6 @@ pragma solidity 0.7.1;
 
 import "./RegularIntervalOracleInterface.sol";
 import "../ChainLinkAggregator/ChainLinkAggregatorInterface.sol";
-// AUDIT-FIX: RIO-01 Not-Fixed. cannot fix
 import "../../node_modules/@openzeppelin/contracts/utils/SafeCast.sol";
 import "../../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -27,26 +26,17 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
   uint256 constant ONE_YEAR_IN_SEC = 3600 * 24 * 365;
 
   /* ========== CONSTANT VARIABLES ========== */
-  // AUDIT-FIX: RIO-02
   AggregatorInterface internal immutable _chainlinkOracle;
-  // AUDIT-FIX: RIO-03
   uint256 internal immutable _interval;
-  // AUDIT-FIX: RIO-04
   uint8 internal immutable _decimals;
-  // AUDIT-FIX: RIO-05
   uint128 internal immutable _timeCorrectionFactor;
-  // AUDIT-FIX: RIO-06
   uint128 internal immutable _oldestTimestamp;
-  // AUDIT-FIX: RIO-07
   uint16 internal immutable _dataNum;
 
   /* ========== STATE VARIABLES ========== */
-  // AUDIT-FIX: RIO-08
   address internal _quantsAddress;
-  // AUDIT-FIX: RIO-09
   uint256 internal _latestTimestamp;
   mapping(uint256 => PriceData) internal _regularIntervalPriceData;
-  // AUDIT-FIX: RIO-10
   uint16 internal lambdaE4;
 
   event LambdaChanged(uint16 newLambda);
@@ -95,19 +85,15 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
     );
     _latestTimestamp = uint128(startTimestamp);
     _oldestTimestamp = uint128(startTimestamp);
-    // AUDIT-FIX: RIO-11
     require(initialDataNum > 1, "Error: InitialDataNum should be more than 1");
-    // AUDIT-FIX: RIO-12
     require(
       quantsAddress != address(0),
       "Error: Invalid initial quant address"
     );
-    // AUDIT-FIX: RIO-13
     require(
       chainlinkOracleAddress != address(0),
       "Error: Invalid chainlink address"
     );
-    // AUDIT-FIX: RIO-14
     require(interval != 0, "Error: Interval should be more than 0");
   }
 
@@ -118,9 +104,7 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
    * @dev Prices must be updated by regular interval
    * @param roundId is chainlink roundId
    */
-  // AUDIT-FIX: RIO-15: Add ristriction of time but not accessibility
   function setPrice(uint256 roundId) public override returns (bool) {
-    // AUDIT-FIX: RIO-16: Not-Fixed: Unnecessary modification
     _latestTimestamp += _interval;
     require(
       _latestTimestamp <= block.timestamp,
@@ -137,17 +121,14 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
    * @notice Set sequential prices
    * @param roundIds Array of roundIds which contain the first timestamp after the regular interval timestamp
    */
-  // AUDIT-FIX: RIO-17: Add ristriction of time in setPrice() but not accessibility
   function setSequentialPrices(uint256[] calldata roundIds)
     external
     override
     returns (bool)
   {
-    // AUDIT-FIX: RIO-19
     uint256 roundIdsLength = roundIds.length;
     uint256 normalizedCurrentTimestamp =
       getNormalizedTimeStamp(block.timestamp);
-    // AUDIT-FIX: RIO-18
     require(
       _latestTimestamp <= normalizedCurrentTimestamp,
       "Error: This function should be after interval"
@@ -182,28 +163,22 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
       newLambdaE4 > 9000 && newLambdaE4 < 10000,
       "new lambda is out of valid range"
     );
-    // AUDIT-FIX: RIO-22 Not-Fixed: Unnecessary modification. _interval is non 0 value
     require(
       (_latestTimestamp - _oldestTimestamp) / _interval > _dataNum,
       "Error: Insufficient number of data registered"
     );
     lambdaE4 = newLambdaE4;
-    // AUDIT-FIX: RIO-20: Not-Fixed: Unnecessary modification: value has been already checked above
     uint256 oldTimestamp = _latestTimestamp - _dataNum * _interval;
-    // AUDIT-FIX: RIO-23: Not-Fixed: Unnecessary modification
     uint256 pNew = _getPrice(oldTimestamp + _interval);
     uint256 updatedVol = _getVolatility(oldTimestamp);
     for (uint256 i = 0; i < _dataNum - 1; i++) {
       updatedVol = _getEwmaVolatility(oldTimestamp, pNew, updatedVol);
-      // AUDIT-FIX: RIO-24: Not-Fixed: Unnecessary modification
       oldTimestamp += _interval;
-      // AUDIT-FIX: RIO-25: Not-Fixed: Unnecessary modification
       pNew = _getPrice(oldTimestamp + _interval);
     }
 
     _regularIntervalPriceData[_latestTimestamp].ewmaVolatilityE8 = updatedVol
       .toUint64();
-    // AUDIT-FIX: RIO-21
     emit LambdaChanged(newLambdaE4);
     return true;
   }
@@ -218,9 +193,7 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
     returns (bool)
   {
     _quantsAddress = quantsAddress;
-    // AUDIT-FIX: RIO-26
     require(quantsAddress != address(0), "Error: Invalid new quant address");
-    // AUDIT-FIX: RIO-27
     emit QuantsChanged(quantsAddress);
   }
 
@@ -257,7 +230,6 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
     uint256 oldVolE8
   ) internal view returns (uint256 volE8) {
     uint256 pOld = _getPrice(oldTimestamp);
-    // AUDIT-FIX: RIO-28 Not-Fixed: Unnecessary modification
     uint256 rrE8 =
       pNew >= pOld
         ? ((pNew * (10**4)) / pOld - (10**4))**2
@@ -275,7 +247,6 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
   /**
    * @dev Calcurate an approximation of the square root of x by Babylonian method.
    */
-  // AUDIT-FIX: RIO-29
   function _sqrt(uint256 x) internal pure returns (uint256 y) {
     if (x > 3) {
       uint256 z = x / 2 + 1;
@@ -312,11 +283,9 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
       "Hint round or Latest round should be registered after target time"
     );
     require(hintID != 0, "Invalid hint ID");
-    // AUDIT-FIX: RIO-30 Not-Fixed: Unnecessary modification: hint ID at this point is more than 0
     for (uint256 index = hintID - 1; index > 0; index--) {
       uint256 timestamp = _chainlinkAggregator.getTimestamp(index);
       if (timestamp != 0 && timestamp <= targetTimeStamp) {
-        // AUDIT-FIX: RIO-31 Not-Fixed: Unnecessary modification
         return index + 1;
       }
     }
@@ -328,7 +297,6 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
     require(priceE8 > 0, "Should return valid price");
     uint256 ewmaVolatilityE8 =
       _getEwmaVolatility(
-        // AUDIT-FIX: RIO-32 Not-Fixed: Unnecessary modification
         timeStamp - _interval,
         uint256(priceE8),
         _getVolatility(timeStamp - _interval)
@@ -353,11 +321,9 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
   ) internal view returns (int256 priceE8) {
     while (true) {
       priceE8 = _chainlinkAggregator.getAnswer(roundId);
-      // AUDIT-FIX: RIO-28 etc
       if (priceE8 > 0 && priceE8 < MAX_VALID_ETHPRICE) {
         break;
       }
-      // AUDIT-FIX: RIO-33 Not-Fixed: Unnecessary modification
       roundId -= 1;
     }
   }
@@ -373,16 +339,13 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
     override
     returns (uint256)
   {
-    // AUDIT-FIX: RIO-34
     // L79
     return
       ((timestamp.sub(_timeCorrectionFactor)) / _interval) *
-      // AUDIT-FIX: RIO-35 Not-Fixed: Unnecessary modification
       _interval +
       _timeCorrectionFactor;
   }
 
-  // AUDIT-FIX: RIO-36
   function getInfo()
     external
     view
@@ -462,7 +425,6 @@ contract RegularIntervalOracle is RegularIntervalOracleInterface {
    * @dev Calculate new volatility with chainlink price at latest round
    * @param volE8 Return the larger of `latestVolatility` and `currentVolatility`
    */
-  // AUDIT-FIX: RIO-37
   function getVolatility() external view override returns (uint256 volE8) {
     volE8 = _getCurrentVolatility();
   }
